@@ -7,7 +7,7 @@ int32 n=0; /*variable globar que es compartida por todos los procesos*/
 
 
 /*main*/
-/*Ejemplo de un productor consumidor desincronizado*/
+/*Ejemplo de un productor consumidor sincronizado*/
 
 void productorConsumidor(void){
 	productor_sem= semcreate(1);
@@ -24,7 +24,7 @@ void productorConsumidor(void){
 void productor(void){
 	int32 i;
 	for(i=1; i<=2000; i++){
-		/*espera que el consumidor le diga cuando volver a producir jajajajajajajajajajajaja*/
+		/*espera que el consumidor le diga cuando volver a producir */
 		wait(productor_sem);
 		n++;
 		/*le avisa al consumidor que puede volver a consumir*/
@@ -37,10 +37,10 @@ void productor(void){
 void consumidor(void){
 	int32 i;
 	for(i=1; i<=2000; i++){
-		/*espera que el productor le indique cuando consumir jajaja y si*/
+		/*espera que el productor le indique cuando consumir ja ja y si*/
 		wait(consumidor_sem);
 		printf("El valor de n es: %d \n",n);
-		/*consume y le avisa al productor que ya puede volver a producir jajajaja que estudpidoooooo*/
+		/*consume y le avisa al productor que ya puede volver a producir*/
 		signal(productor_sem);
 	}
 }
