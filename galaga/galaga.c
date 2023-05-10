@@ -1,4 +1,5 @@
 #include <xinu.h>
+#include <stdio.h>
 #include "titlescreen.h"
 #include "playerImage.h"
 #include "enemy.h"
@@ -8,6 +9,7 @@
 
 int puntajeOVida=0, puntaje=0, vidas=3;
 sid32 semMurio, semProceso2, seguir;
+char mensajePuntaje, mensajeVidas;
 
 extern unsigned char tecla_actual;
 typedef unsigned short u16;
@@ -193,7 +195,6 @@ int jugar(void){
 					drawRect((shoots[i] % 240), (shoots[i] / 240)+4, 5, 5, BLACK);
 					easyEnemies[j].enemyY = 0;
 					shoots[i] = 0;
-					
 					/*agregado*/
 					puntajeOVida=1;
 					signal(semProceso2);
@@ -236,12 +237,10 @@ int jugar(void){
 		drawHollowRect(fast.fastX - 1, fast.fastY - 1, 17, 17, BLACK);
 		drawHollowRect(fast.fastX - 2, fast.fastY - 2, 19, 19, BLACK);
 		if(collision(fast.fastX, fast.fastY, 15, 15, player.playerX, player.playerY)) {
-			printf("peachessoy2");
 			/*agregado*/
 			puntajeOVida=2;
 			signal(semProceso2);
 			wait(seguir);
-
 			/*fin del agregado*/
 
 		}		
@@ -260,22 +259,18 @@ int jugar(void){
 void restarVidasOSumarPuntaje(){
 while(1){
 	wait(semProceso2);
-
 	/*si la variable es 1 -> gana puntos*/
 	/*si la variable es 2 -> perdio una vida*/
 	if(puntajeOVida==1){
-		puntaje=puntaje+100;	
+		puntaje+=100;
+		print_text_on_vga(500, 20, sprintf(mensajePuntaje, "PUNTAJE:  %d", puntaje ));	
 	}else{
 		vidas=vidas-1;
-		printf("Viditas todavia; %d", vidas);
+		print_text_on_vga(500, 40, sprintf(mensajeVidas, "VIDAS RESTANTES:  %d", vidas ));
 		if(vidas==0){
-			printf("Vidas; %d", vidas);
 			signal(semMurio);
 		}
 	}
-
-	print_text_on_vga(500, 20,"PUNTAJE");
-	print_text_on_vga(580, 25, "VIDAS %i", vidas);
 	signal(seguir);
 }
 
