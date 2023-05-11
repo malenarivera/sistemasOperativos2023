@@ -42,12 +42,13 @@ typedef unsigned short u16;
 #define BUTTON_B	0x25 
 #define BUTTON_SELECT	0x03
 #define BUTTON_START	0x2c
-#define BUTTON_RIGHT	0x1f
-#define BUTTON_LEFT	0x1e	
-#define BUTTON_UP	'w'
-#define BUTTON_DOWN 	's'	
+#define BUTTON_RIGHT	0x20
+#define BUTTON_LEFT	 0x1e	
+/*#define BUTTON_UP	0x11
+#define BUTTON_DOWN 	0x1f	
 #define BUTTON_R	'1'
-#define BUTTON_L	'2'
+#define BUTTON_L	'2'*/
+#define BUTTON_ESC   0x1
 #define KEY_DOWN_NOW(key)  (tecla_actual == key)
 
 //variable definitions
@@ -68,7 +69,7 @@ void waitForVBlank();
 void initialize();
 void drawEnemies();
 //void endGame();
-int collision(u16 enemyX, u16 enemyY, u16 enemyWidth, u16 enemyHeight, u16 playerX, u16 playerY,int playerWidth, int playerHeight);
+int collision(u16 enemyX, u16 enemyY, u16 enemyWidth, u16 enemyHeight, u16 playerX, u16 playerY, u16 playerWidth, u16 playerHeight);
 void avisarCambio();
 //objects
 struct Players {
@@ -92,35 +93,47 @@ int shoots[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int curr_shot = 0;
 #define N_SHOOTS 10
 
+
+/*collision cambiado --> ahora devuelve 0 unicamente si no hubo colision en ningun sentido*/
+int collision(u16 enemyX, u16 enemyY, u16 enemyWidth, u16 enemyHeight, u16 playerX, u16 playerY, u16  playerWidth, u16 playerHeight) {
+if ( (enemyX > (playerX + playerWidth)) || 
+    ((enemyX + enemyWidth) < playerX ) ||
+   (enemyY > (playerY + playerHeight) ) ||
+   ((enemyY + enemyHeight) < playerY ) ) {
+   return 0;
+}else
+    return 1;   
+}
+
 int jugar(void){
-	//easy enemy wave set setup
-	for (int a = 0; a < 9; a++) {
+    for (int a = 0; a < 9; a++) {
 		easyEnemies[a].enemyX = (28*a);
 		easyEnemies[a].enemyY = 0;
 	} 
-	easyEnemies[1].enemyX = 240;
-	easyEnemies[4].enemyX = 240;
-	easyEnemies[8].enemyX = 240;
+	    easyEnemies[1].enemyX = 240;
+	    easyEnemies[4].enemyX = 240;
+	    easyEnemies[8].enemyX = 240;
 	//difficult enemies setup
 	for (int a = 0; a < 9; a++) {
 		hardEnemies[a].enemyX = (28*a);
 		hardEnemies[a].enemyY = 160;
 	} 
-	hardEnemies[3].enemyX = 240;
-	hardEnemies[6].enemyX = 240;
+	    hardEnemies[3].enemyX = 240;
+	    hardEnemies[6].enemyX = 240;
 	//player setup
 	struct Players player;
-	player.playerX = 120;
-	player.playerY = 136;
+	    player.playerX = 120;
+	    player.playerY = 136;
 	//fast enemy "boss" setup
 	struct FastEnemy fast;
-	fast.fastX = 0;
-	fast.fastY = 30; 
+	    fast.fastX = 0;
+	    fast.fastY = 30; 
 
 	// REG_DISPCNT = MODE3 | BG2_ENABLE;
 	//initalize title screen
 	print_text_on_vga(10, 20, "GALAGA ");
 	drawImage3(0, 0, 240, 160, titlescreen);
+
 	while(1) {
 		if (KEY_DOWN_NOW(BUTTON_START)) {
 			break;
@@ -154,20 +167,26 @@ int jugar(void){
 		if (KEY_DOWN_NOW(BUTTON_RIGHT) && (player.playerX <= 216)) {
 			player.playerX += playerspeed;
 		}
+		/*
 		if (KEY_DOWN_NOW(BUTTON_UP) && (player.playerY > 25)) {
 			player.playerY -= playerspeed;
 		}
 		if (KEY_DOWN_NOW(BUTTON_DOWN) && (player.playerY <= 136)) {
 			player.playerY += playerspeed;
 		}
+		*/
+		
+		//si quiere cortar el juego
+		if (KEY_DOWN_NOW(BUTTON_ESC)) {
+			signal(semMurio);
+		}
+		
 		waitForVBlank();
 		sleepms(50);
 		//draw player
 		drawImage3(player.playerX, player.playerY, 24, 24, playerImage);
 		drawHollowRect(player.playerX - 1, player.playerY - 1, 26, 26, BLACK);
 		drawHollowRect(player.playerX - 2, player.playerY - 2, 28, 28, BLACK);
-
-
 
 		//draw easy enemies with downward movement
 		for (int a = 0; a < 9; a++) {
@@ -255,10 +274,10 @@ void avisarCambio(int cambio,int tipoEnemigo, int posicionArreglo){
 	if(cambio == 2){
 		if(tipoEnemigo == 1){
 			drawRect(easyEnemies[posicionArreglo].enemyX, easyEnemies[posicionArreglo].enemyY, 20, 20, BLACK);
-			easyEnemies[posicionArreglo].enemyX= 1000; //Lo saca de la pantalla
+			easyEnemies[posicionArreglo].enemyX= -1; //Lo saca de la pantalla
 		}else{
 			drawRect(hardEnemies[posicionArreglo].enemyX, hardEnemies[posicionArreglo].enemyY, 20, 20, BLACK);
-			hardEnemies[posicionArreglo].enemyX= 1000; //Lo saca de la pantalla
+			hardEnemies[posicionArreglo].enemyX= -1; //Lo saca de la pantalla
 		}
 	}
 	signal(semProceso2);
@@ -267,15 +286,17 @@ void avisarCambio(int cambio,int tipoEnemigo, int posicionArreglo){
 
 void restarVidasOSumarPuntaje(){
 while(1){
+    print_text_on_vga(260, 40, sprintf(mensajeVidas, "VIDAS RESTANTES:  %d", vidas ));
+    print_text_on_vga(260, 20, sprintf(mensajePuntaje, "PUNTAJE:  %d", puntaje ));
 	wait(semProceso2);
 	/*si la variable es 1 -> gana puntos*/
 	/*si la variable es 2 -> perdio una vida*/
 	if(puntajeOVida==1){
 		puntaje+=100;
-		print_text_on_vga(500, 20, sprintf(mensajePuntaje, "PUNTAJE:  %d", puntaje ));	
+		print_text_on_vga(260, 20, sprintf(mensajePuntaje, "PUNTAJE:  %d", puntaje ));	
 	}else{
 		vidas=vidas-1;
-		print_text_on_vga(500, 40, sprintf(mensajeVidas, "VIDAS RESTANTES:  %d", vidas ));
+		print_text_on_vga(260, 40, sprintf(mensajeVidas, "VIDAS RESTANTES:  %d", vidas ));
 		if(vidas==0){
 			signal(semMurio);
 		}
@@ -285,43 +306,6 @@ while(1){
 
 }
 
-
-	
-	
-
-int collision(u16 enemyX, u16 enemyY, u16 enemyWidth, u16 enemyHeight, u16 playerX, u16 playerY,int  playerWidth, int playerHeight) {
-	//check if bottom right corner of enemy is within player
-	if (((enemyX + enemyWidth) > playerX) && ( (enemyY + enemyHeight) 
-		> playerY ) &&  ((enemyX + enemyWidth) < (playerX + playerWidth)) 
-		&& ((enemyY + enemyWidth) < (playerY + playerHeight))) {
-		return 1;
-	} 
-	//check bottom left corner of enemy
-	if ( (enemyX < (playerX + playerWidth)) 
-		&& (enemyX > playerX)
-		&& ((enemyY + enemyHeight) > playerY)
-		&& ((enemyY + enemyHeight) < (playerY + playerHeight))
-		) {
-		return 1;
-	}
-	//check top left corner
-	if ( (enemyX < (playerX + playerWidth)) 
-		&& (enemyX > playerX)
-		&& (enemyY > playerY)
-		&& (enemyY < (playerY + playerHeight))
-		) {
-		return 1;
-	}	
-	//check top right corner
-	if ( ((enemyX + enemyWidth) < (playerX + playerWidth)) 
-		&& ((enemyX + enemyWidth) > playerX)
-		&& (enemyY > playerY)
-		&& (enemyY < (playerY + playerHeight))
-		) {
-		return 1;
-	}	
-	return 0;
-}
 
 void endGame() {
 	//start Game Over State
@@ -354,7 +338,6 @@ void controlcito(){
 }
 
 void galaga(void) {
-
 	/*Inicializo los semaforos*/
 	semMurio= semcreate(0);
 	seguir= semcreate(0);
