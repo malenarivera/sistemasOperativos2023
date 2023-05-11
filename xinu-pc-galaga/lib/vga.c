@@ -90,7 +90,7 @@ void pixel(unsigned x, unsigned y, uint32 color)
 
 void paint_screen(){
 
-        uint32 color = 0x00ffffff;
+        uint32 color = 0x00ffff00;
         int i,j,x,y;
         open(VGA, NULL, 0);
         for (y=0; y<VGA_HEIGHT; y++) {

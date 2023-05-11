@@ -8,7 +8,7 @@
 #include "shoot.h"
 
 int puntajeOVida=0, puntaje=0, vidas=3;
-sid32 semMurio, semProceso2, seguir;
+sid32 semMurio, semProceso2, semSeguir;
 char mensajePuntaje, mensajeVidas;
 
 
@@ -22,6 +22,7 @@ typedef unsigned short u16;
 #define BG2_ENABLE (1 << 10)
 #define WHITE RGB(31, 31, 31)
 #define BLACK RGB(0, 0, 0)
+#define YELLOW RGB(255, 255, 0)
 
 /*
 #define BUTTON_A		(1<<0)
@@ -106,6 +107,8 @@ if ( (enemyX > (playerX + playerWidth)) ||
 }
 
 int jugar(void){
+	vidas = 3;
+	puntaje = 0;
     for (int a = 0; a < 9; a++) {
 		easyEnemies[a].enemyX = (28*a);
 		easyEnemies[a].enemyY = 0;
@@ -194,7 +197,11 @@ int jugar(void){
 			drawImage3(easyEnemies[a].enemyX, easyEnemies[a].enemyY, 20, 20, enemy);
 			if (collision(easyEnemies[a].enemyX, easyEnemies[a].enemyY, 20, 20, player.playerX, player.playerY,24,24)) {
 				/*agregado*/
+					vidas=vidas-1;
 					avisarCambio(2,1,a);
+					if(vidas==0){
+						signal(semMurio);
+					}
 				 /*fin del agregado*/
 
 			}	
@@ -208,9 +215,12 @@ int jugar(void){
 			hardEnemies[a].enemyY += enemyspeed;
 			drawImage3(hardEnemies[a].enemyX, hardEnemies[a].enemyY, 20, 20, enemy);
 			if (collision(hardEnemies[a].enemyX, hardEnemies[a].enemyY, 20, 20, player.playerX, player.playerY,24,24)) {
-
 				/*agregado*/
+				vidas=vidas-1;
 				avisarCambio(2,2,a);
+				if(vidas==0){
+					signal(semMurio);
+				}
 				/*fin del agregado*/
 
 			}	
@@ -245,6 +255,7 @@ int jugar(void){
 						easyEnemies[j].enemyY = 0;
 						shoots[i] = 0;
 						/*agregado*/
+						puntaje+=100;
 						avisarCambio(1,0,0);
 						/*fin del agregado*/
 
@@ -256,6 +267,7 @@ int jugar(void){
 						hardEnemies[j].enemyY = 0;
 						shoots[i] = 0;
 						/*agregado*/
+						puntaje+=500;//Matar enemigos dificiles da mas puntos
 						avisarCambio(1,0,0);
 						/*fin del agregado*/
 
@@ -281,7 +293,7 @@ void avisarCambio(int cambio,int tipoEnemigo, int posicionArreglo){
 		}
 	}
 	signal(semProceso2);
-	wait(seguir);
+	wait(semSeguir);
 }
 
 void restarVidasOSumarPuntaje(){
@@ -292,16 +304,11 @@ while(1){
 	/*si la variable es 1 -> gana puntos*/
 	/*si la variable es 2 -> perdio una vida*/
 	if(puntajeOVida==1){
-		puntaje+=100;
 		print_text_on_vga(260, 20, sprintf(mensajePuntaje, "PUNTAJE:  %d", puntaje ));	
 	}else{
-		vidas=vidas-1;
 		print_text_on_vga(260, 40, sprintf(mensajeVidas, "VIDAS RESTANTES:  %d", vidas ));
-		if(vidas==0){
-			signal(semMurio);
-		}
 	}
-	signal(seguir);
+	signal(semSeguir);
 }
 
 }
@@ -313,10 +320,10 @@ void endGame() {
 	drawHollowRect(0, 0, 240, 160, WHITE);
 	while(1) {
 		if (KEY_DOWN_NOW(BUTTON_SELECT)) {
-			galaga();
+			controlcito();
 		}
 		if (KEY_DOWN_NOW(BUTTON_START))	{
-			galaga();
+			controlcito();
 		}
 	}
 }
@@ -333,14 +340,20 @@ void controlcito(){
 	wait(semMurio);
 	kill(pid1);
 	kill(pid2);
-	endGame();
+	if(vidas==0){
+		endGame();
+	}else{
+		drawRect(0, 0, 240, 180, YELLOW);
+		print_text_on_vga(260, 20, sprintf(mensajePuntaje, "                 "));
+		print_text_on_vga(260, 40, sprintf(mensajeVidas, "                   "));
+	}
 
 }
 
 void galaga(void) {
 	/*Inicializo los semaforos*/
 	semMurio= semcreate(0);
-	seguir= semcreate(0);
+	semSeguir= semcreate(0);
 	semProceso2= semcreate(0);
 
 	int pidControl;
