@@ -42,14 +42,14 @@ typedef unsigned short u16;
 #define BUTTON_A	0x24
 #define BUTTON_B	0x25 
 #define BUTTON_SELECT	0x03
-#define BUTTON_START	0x2c
-#define BUTTON_RIGHT	0x20
-#define BUTTON_LEFT	 0x1e	
+#define BUTTON_START	0x2c // 'z'
+#define BUTTON_RIGHT	0x20 // 'd'
+#define BUTTON_LEFT	 0x1e	// 'a'
 /*#define BUTTON_UP	0x11
 #define BUTTON_DOWN 	0x1f	
 #define BUTTON_R	'1'
 #define BUTTON_L	'2'*/
-#define BUTTON_ESC   0x1
+#define BUTTON_ESC   0x1 // 'esc'
 #define KEY_DOWN_NOW(key)  (tecla_actual == key)
 
 //variable definitions
@@ -71,7 +71,7 @@ void initialize();
 void drawEnemies();
 //void endGame();
 int collision(u16 enemyX, u16 enemyY, u16 enemyWidth, u16 enemyHeight, u16 playerX, u16 playerY, u16 playerWidth, u16 playerHeight);
-void avisarCambio();
+void actualizarEstado();
 //objects
 struct Players {
 	volatile u16 playerX;
@@ -196,13 +196,12 @@ int jugar(void){
 			easyEnemies[a].enemyY += enemyspeed;
 			drawImage3(easyEnemies[a].enemyX, easyEnemies[a].enemyY, 20, 20, enemy);
 			if (collision(easyEnemies[a].enemyX, easyEnemies[a].enemyY, 20, 20, player.playerX, player.playerY,24,24)) {
-				/*agregado*/
+
 					vidas=vidas-1;
-					avisarCambio(2,1,a);
+					actualizarEstado(2,1,a);
 					if(vidas==0){
 						signal(semMurio);
 					}
-				 /*fin del agregado*/
 
 			}	
 			if (easyEnemies[a].enemyY >= 160) {
@@ -215,13 +214,13 @@ int jugar(void){
 			hardEnemies[a].enemyY += enemyspeed;
 			drawImage3(hardEnemies[a].enemyX, hardEnemies[a].enemyY, 20, 20, enemy);
 			if (collision(hardEnemies[a].enemyX, hardEnemies[a].enemyY, 20, 20, player.playerX, player.playerY,24,24)) {
-				/*agregado*/
+
 				vidas=vidas-1;
-				avisarCambio(2,2,a);
+				actualizarEstado(2,2,a);
 				if(vidas==0){
 					signal(semMurio);
 				}
-				/*fin del agregado*/
+
 
 			}	
 			if (hardEnemies[a].enemyY >= 228) {
@@ -254,10 +253,10 @@ int jugar(void){
 						drawRect((shoots[i] % 240), (shoots[i] / 240)+4, 5, 5, BLACK);
 						easyEnemies[j].enemyY = 0;
 						shoots[i] = 0;
-						/*agregado*/
+
 						puntaje+=100;
-						avisarCambio(1,0,0);
-						/*fin del agregado*/
+						actualizarEstado(1,0,0);
+
 
 					}
 
@@ -266,10 +265,10 @@ int jugar(void){
 						drawRect((shoots[i] % 240), (shoots[i] / 240)+4, 5, 5, BLACK);
 						hardEnemies[j].enemyY = 0;
 						shoots[i] = 0;
-						/*agregado*/
+
 						puntaje+=500;//Matar enemigos dificiles da mas puntos
-						avisarCambio(1,0,0);
-						/*fin del agregado*/
+						actualizarEstado(1,0,0);
+
 
 					}
 				}
@@ -280,7 +279,7 @@ int jugar(void){
 	return 0;
 }
 
-void avisarCambio(int cambio,int tipoEnemigo, int posicionArreglo){
+void actualizarEstado(int cambio,int tipoEnemigo, int posicionArreglo){
 	//Tipo de enemigo = si es 1 es easy, si es 2 es hard
 	puntajeOVida=cambio;
 	if(cambio == 2){
@@ -296,7 +295,7 @@ void avisarCambio(int cambio,int tipoEnemigo, int posicionArreglo){
 	wait(semSeguir);
 }
 
-void restarVidasOSumarPuntaje(){
+void mostrarVidasPuntaje(){
 while(1){
     print_text_on_vga(260, 40, sprintf(mensajeVidas, "VIDAS RESTANTES:  %d", vidas ));
     print_text_on_vga(260, 20, sprintf(mensajePuntaje, "PUNTAJE:  %d", puntaje ));
@@ -313,18 +312,28 @@ while(1){
 
 }
 
+void limpiarPantalla(){
+	drawRect(0, 0, 240, 180, YELLOW);
+	print_text_on_vga(260, 20, sprintf(mensajePuntaje, "                 "));
+	print_text_on_vga(260, 40, sprintf(mensajeVidas, "                   "));
+}
 
 void endGame() {
 	//start Game Over State
 	drawImage3(0, 0, 240, 160, gameover);
 	drawHollowRect(0, 0, 240, 160, WHITE);
-	while(1) {
+	int esperando = 1;
+	while(esperando) {
 		if (KEY_DOWN_NOW(BUTTON_SELECT)) {
 			controlcito();
 		}
 		if (KEY_DOWN_NOW(BUTTON_START))	{
 			controlcito();
 		}
+		if(KEY_DOWN_NOW(BUTTON_ESC)){
+			esperando = 0;
+			limpiarPantalla();
+		}	
 	}
 }
 
@@ -332,7 +341,7 @@ void endGame() {
 void controlcito(){
 	int pid1, pid2;
 	pid1= create(jugar, 1024, 20, "proceso 1",0);
-	pid2= create (restarVidasOSumarPuntaje, 1024, 20, "proceso 2", 0);
+	pid2= create (mostrarVidasPuntaje, 1024, 20, "proceso 2", 0);
 	
 	resume(pid1);
 	resume(pid2);
@@ -343,9 +352,7 @@ void controlcito(){
 	if(vidas==0){
 		endGame();
 	}else{
-		drawRect(0, 0, 240, 180, YELLOW);
-		print_text_on_vga(260, 20, sprintf(mensajePuntaje, "                 "));
-		print_text_on_vga(260, 40, sprintf(mensajeVidas, "                   "));
+		limpiarPantalla();
 	}
 
 }
