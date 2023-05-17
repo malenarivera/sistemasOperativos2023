@@ -2,6 +2,9 @@
 
 #include <xinu.h>
 #include <mouse.h>
+char caracterSacado;
+
+
 
 /*------------------------------------------------------------------------
  * kbdread  -  Read the status of the keyboard driver
@@ -13,5 +16,6 @@ devcall	kbdread (
           uint32        count           /* Length of buffer             */
 	)
 {
+	caracterSacado= sacar();
 	return OK;
 }
