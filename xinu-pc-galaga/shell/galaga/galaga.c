@@ -8,8 +8,9 @@
 #include "shoot.h"
 
 int puntajeOVida=0, puntaje=0, vidas=3;
-sid32 semMurio, semProceso2, semSeguir;
+int pidMurio, pidProceso2, pidSeguir;
 char mensajePuntaje, mensajeVidas;
+umsg32	msgMurio, msgProceso2, msgSeguir;
 
 
 extern unsigned char tecla_actual;
@@ -181,7 +182,7 @@ int jugar(void){
 		
 		//si quiere cortar el juego
 		if (KEY_DOWN_NOW(BUTTON_ESC)) {
-			signal(semMurio);
+			send(pidMurio, msgMurio);
 		}
 		
 		waitForVBlank();
@@ -200,7 +201,7 @@ int jugar(void){
 					vidas=vidas-1;
 					actualizarEstado(2,1,a);
 					if(vidas==0){
-						signal(semMurio);
+						send(pidMurio, msgMurio);
 					}
 
 			}	
@@ -218,7 +219,7 @@ int jugar(void){
 				vidas=vidas-1;
 				actualizarEstado(2,2,a);
 				if(vidas==0){
-					signal(semMurio);
+					send(pidMurio, msgMurio);
 				}
 
 
@@ -291,15 +292,16 @@ void actualizarEstado(int cambio,int tipoEnemigo, int posicionArreglo){
 			hardEnemies[posicionArreglo].enemyX= -1; //Lo saca de la pantalla
 		}
 	}
-	signal(semProceso2);
-	wait(semSeguir);
+	send(pidProceso2, msgProceso2);
+	msgSeguir = receive();
 }
 
 void mostrarVidasPuntaje(){
 while(1){
     print_text_on_vga(260, 40, sprintf(mensajeVidas, "VIDAS RESTANTES:  %d", vidas ));
     print_text_on_vga(260, 20, sprintf(mensajePuntaje, "PUNTAJE:  %d", puntaje ));
-	wait(semProceso2);
+	msgProceso2=receive();
+
 	/*si la variable es 1 -> gana puntos*/
 	/*si la variable es 2 -> perdio una vida*/
 	if(puntajeOVida==1){
@@ -307,7 +309,7 @@ while(1){
 	}else{
 		print_text_on_vga(260, 40, sprintf(mensajeVidas, "VIDAS RESTANTES:  %d", vidas ));
 	}
-	signal(semSeguir);
+	send(pidSeguir, msgSeguir);
 }
 
 }
@@ -339,16 +341,14 @@ void endGame() {
 
 
 void controlcito(){
-	int pid1, pid2;
-	pid1= create(jugar, 1024, 20, "proceso 1",0);
-	pid2= create (mostrarVidasPuntaje, 1024, 20, "proceso 2", 0);
-	
-	resume(pid1);
-	resume(pid2);
+	pidSeguir= create(jugar, 1024, 20, "proceso 1",0);
+	pidProceso2= create (mostrarVidasPuntaje, 1024, 20, "proceso 2", 0);
+	resume(pidSeguir);
+	resume(pidProceso2);
 
-	wait(semMurio);
-	kill(pid1);
-	kill(pid2);
+	msgMurio= receive();
+	kill(pidSeguir);
+	kill(pidProceso2);
 	if(vidas==0){
 		endGame();
 	}else{
@@ -358,12 +358,6 @@ void controlcito(){
 }
 
 void galaga(void) {
-	/*Inicializo los semaforos*/
-	semMurio= semcreate(0);
-	semSeguir= semcreate(0);
-	semProceso2= semcreate(0);
-
-	int pidControl;
-	pidControl= create(controlcito, 1024, 20, "proceso control",0);
-	resume(pidControl);
+	pidMurio= create(controlcito, 1024, 20, "proceso control",0);
+	resume(pidMurio);
 }

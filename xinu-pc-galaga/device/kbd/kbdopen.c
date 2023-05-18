@@ -13,6 +13,6 @@ devcall	kbdopen (
 	 char	*mode			/* Unused for a kbd */
 	)
 {
-	wait(elelementosDisponibles);
+	wait(elementosDisponibles);
 	wait(mutexkbd);
 }
