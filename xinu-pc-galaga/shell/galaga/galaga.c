@@ -10,7 +10,6 @@
 int puntajeOVida=0, puntaje=0, vidas=3;
 int pidMurio, pidProceso2, pidSeguir;
 char mensajePuntaje, mensajeVidas;
-umsg32	msgMurio, msgProceso2, msgSeguir;
 
 
 extern unsigned char tecla_actual;
@@ -182,7 +181,7 @@ int jugar(void){
 		
 		//si quiere cortar el juego
 		if (KEY_DOWN_NOW(BUTTON_ESC)) {
-			send(pidMurio, msgMurio);
+			send(pidMurio, 3);
 		}
 		
 		waitForVBlank();
@@ -201,7 +200,7 @@ int jugar(void){
 					vidas=vidas-1;
 					actualizarEstado(2,1,a);
 					if(vidas==0){
-						send(pidMurio, msgMurio);
+						send(pidMurio,3);
 					}
 
 			}	
@@ -219,7 +218,7 @@ int jugar(void){
 				vidas=vidas-1;
 				actualizarEstado(2,2,a);
 				if(vidas==0){
-					send(pidMurio, msgMurio);
+					send(pidMurio,3);
 				}
 
 
@@ -292,15 +291,15 @@ void actualizarEstado(int cambio,int tipoEnemigo, int posicionArreglo){
 			hardEnemies[posicionArreglo].enemyX= -1; //Lo saca de la pantalla
 		}
 	}
-	send(pidProceso2, msgProceso2);
-	msgSeguir = receive();
+	send(pidProceso2, 2);
+	if(receive()==1){}
 }
 
 void mostrarVidasPuntaje(){
 while(1){
     print_text_on_vga(260, 40, sprintf(mensajeVidas, "VIDAS RESTANTES:  %d", vidas ));
     print_text_on_vga(260, 20, sprintf(mensajePuntaje, "PUNTAJE:  %d", puntaje ));
-	msgProceso2=receive();
+	if(receive()==2){	
 
 	/*si la variable es 1 -> gana puntos*/
 	/*si la variable es 2 -> perdio una vida*/
@@ -309,7 +308,8 @@ while(1){
 	}else{
 		print_text_on_vga(260, 40, sprintf(mensajeVidas, "VIDAS RESTANTES:  %d", vidas ));
 	}
-	send(pidSeguir, msgSeguir);
+	send(pidSeguir, 1);
+	}	
 }
 
 }
@@ -346,7 +346,7 @@ void controlcito(){
 	resume(pidSeguir);
 	resume(pidProceso2);
 
-	msgMurio= receive();
+	if(receive()==3){
 	kill(pidSeguir);
 	kill(pidProceso2);
 	if(vidas==0){
@@ -354,6 +354,7 @@ void controlcito(){
 	}else{
 		limpiarPantalla();
 	}
+	}	
 
 }
 
